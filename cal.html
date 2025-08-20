@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>คำนวณแคลอรี่อาหาร</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral Tones -->
+    <!-- Application Structure Plan: Authentication-first flow with multiple providers. The login screen now includes forms for email/password registration and login, in addition to the anonymous option. A simple toggle switches between login/register views. User data remains tied to their Firebase UID, ensuring a seamless experience whether they sign in anonymously or with an email. -->
+    <!-- Visualization & Content Choices: Report Info (User-specific, cloud-synced food list) -> Goal (Inform, Compare, Personalize, Persist) -> Viz/Presentation (Interactive list, Dynamic summary, Pie Chart) -> Interaction (Login/Logout via Email or Anonymous, Search, Filter, Add/Remove meal items, Add/Save/Delete custom foods to Firestore) -> Justification (Adding email authentication provides users with a permanent, recoverable account, enhancing data security and portability. The UI is updated to handle both login and registration flows cleanly.) -> Library/Method (Firebase Auth & Firestore, Chart.js/Canvas, Vanilla JS). -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #fdfbf7;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d4c4a8;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b9a485;
+        }
+        .login-bg {
+            background-image: linear-gradient(to top, #fdfbf7, #e2d5be);
+        }
+        #appScreen, #loginScreen {
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-bg min-h-screen flex flex-col justify-center items-center p-4">
+        <div class="w-full max-w-sm bg-white/60 backdrop-blur-sm p-8 rounded-2xl shadow-lg">
+            <h1 class="text-3xl font-bold text-[#4a403a] mb-6 text-center">Calorie Counter</h1>
+            
+            <!-- Login Form -->
+            <form id="loginForm">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">เข้าสู่ระบบ</h2>
+                <div class="mb-4">
+                    <label for="loginEmail" class="block text-sm font-medium text-gray-600">อีเมล</label>
+                    <input type="email" id="loginEmail" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#b9a485] focus:border-[#b9a485]" required>
+                </div>
+                <div class="mb-4">
+                    <label for="loginPassword" class="block text-sm font-medium text-gray-600">รหัสผ่าน</label>
+                    <input type="password" id="loginPassword" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#b9a485] focus:border-[#b9a485]" required>
+                </div>
+                <button type="submit" class="w-full bg-[#8c6f4e] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#7a5f41] transition duration-300">เข้าสู่ระบบ</button>
+                <p class="text-center text-sm text-gray-600 mt-4">
+                    ยังไม่มีบัญชี? <a href="#" id="showRegisterLink" class="font-medium text-[#8c6f4e] hover:underline">สร้างบัญชีใหม่</a>
+                </p>
+            </form>
+
+            <!-- Register Form (hidden by default) -->
+            <form id="registerForm" class="hidden">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">สร้างบัญชีใหม่</h2>
+                <div class="mb-4">
+                    <label for="registerEmail" class="block text-sm font-medium text-gray-600">อีเมล</label>
+                    <input type="email" id="registerEmail" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#b9a485] focus:border-[#b9a485]" required>
+                </div>
+                <div class="mb-4">
+                    <label for="registerPassword" class="block text-sm font-medium text-gray-600">รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)</label>
+                    <input type="password" id="registerPassword" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#b9a485] focus:border-[#b9a485]" required>
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-300">สมัครสมาชิก</button>
+                <p class="text-center text-sm text-gray-600 mt-4">
+                    มีบัญชีอยู่แล้ว? <a href="#" id="showLoginLink" class="font-medium text-[#8c6f4e] hover:underline">เข้าสู่ระบบที่นี่</a>
+                </p>
+            </form>
+
+            <div class="my-4 flex items-center">
+                <hr class="flex-grow border-t border-gray-300"><span class="px-2 text-gray-500 text-sm">หรือ</span><hr class="flex-grow border-t border-gray-300">
+            </div>
+            <button id="anonLoginBtn" class="w-full bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
+                เข้าใช้งานแบบไม่ระบุตัวตน
+            </button>
+            <p id="authError" class="text-red-500 text-sm text-center mt-4 h-4"></p>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="appScreen" class="hidden opacity-0">
+         <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+            <header class="text-center mb-8 relative">
+                <h1 class="text-4xl md:text-5xl font-bold text-[#4a403a]">คำนวณแคลอรี่อาหารของคุณ</h1>
+                <p class="text-lg text-gray-600 mt-2">ค้นหาและเพิ่มรายการอาหารเพื่อคำนวณปริมาณแคลอรี่ในแต่ละมื้อ</p>
+                <div class="absolute top-0 right-0 text-right">
+                    <p id="userStatus" class="text-xs text-gray-500 truncate max-w-[150px] md:max-w-xs"></p>
+                    <button id="logoutBtn" class="text-sm text-red-500 hover:text-red-700 hover:underline">ออกจากระบบ</button>
+                </div>
+            </header>
+
+            <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Left Column -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-semibold text-[#4a403a]">รายการอาหาร</h2>
+                        <button id="openAddFoodModal" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm font-medium">เพิ่มอาหาร</button>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                        <input type="text" id="searchInput" placeholder="ค้นหาชื่ออาหาร..." class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#b9a485]">
+                        <select id="categoryFilter" class="w-full sm:w-48 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#b9a485]">
+                            <option value="all">ทุกหมวดหมู่</option>
+                        </select>
+                    </div>
+                    <div id="foodList" class="flex-grow h-96 overflow-y-auto pr-2"></div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <h2 class="text-2xl font-semibold mb-4 text-[#4a403a]">สรุปมื้ออาหารของคุณ</h2>
+                    <div id="mealList" class="mb-4 min-h-[100px]">
+                        <p id="emptyMealText" class="text-gray-500 text-center py-8">ยังไม่มีรายการอาหารที่เลือก...</p>
+                    </div>
+                    <hr class="my-4">
+                    <div class="flex justify-between items-center text-xl font-bold mb-4">
+                        <span class="text-[#4a403a]">แคลอรี่รวม:</span>
+                        <span id="totalCalories" class="text-2xl text-[#8c6f4e]">0</span>
+                        <span class="text-[#4a403a]">kcal</span>
+                    </div>
+                    <button id="clearButton" class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition-colors duration-300 disabled:bg-gray-300" disabled>ล้างทั้งหมด</button>
+                    <div class="mt-6">
+                        <h3 class="text-xl font-semibold text-center mb-2 text-[#4a403a]">สัดส่วนแคลอรี่</h3>
+                        <div class="chart-container">
+                            <canvas id="calorieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add Food Modal -->
+    <div id="addFoodModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 hidden">
+        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
+            <h3 class="text-2xl font-semibold mb-4">เพิ่มรายการอาหารของคุณ</h3>
+            <form id="addFoodForm">
+                <div class="mb-4">
+                    <label for="foodName" class="block text-gray-700 mb-1">ชื่ออาหาร</label>
+                    <input type="text" id="foodName" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                </div>
+                <div class="mb-4">
+                    <label for="foodCalories" class="block text-gray-700 mb-1">แคลอรี่ (kcal)</label>
+                    <input type="number" id="foodCalories" class="w-full p-3 border border-gray-300 rounded-lg" required min="0">
+                </div>
+                <div class="mb-6">
+                    <label for="foodCategory" class="block text-gray-700 mb-1">หมวดหมู่</label>
+                    <select id="foodCategory" class="w-full p-3 border border-gray-300 rounded-lg" required></select>
+                </div>
+                <div class="flex justify-end gap-4">
+                    <button type="button" id="closeAddFoodModal" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300">ยกเลิก</button>
+                    <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCzzjC7LWIAyeA4khTxFOstr-Pwu_igsdI",
+            authDomain: "calculate-calories-program.firebaseapp.com",
+            projectId: "calculate-calories-program",
+            storageBucket: "calculate-calories-program.firebasestorage.app",
+            messagingSenderId: "577845433316",
+            appId: "1:577845433316:web:f3b9814b1d25147a63adf1",
+            measurementId: "G-G1CX86G5PV"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const defaultFoodData = [
+            { name: "ข้าวกะเพราไก่ไข่ดาว", category: "อาหารจานเดียว", calories: 630 }, { name: "ข้าวมันไก่", category: "อาหารจานเดียว", calories: 596 }, { name: "ข้าวมันไก่ทอด", category: "อาหารจานเดียว", calories: 695 }, { name: "ข้าวหมูแดง", category: "อาหารจานเดียว", calories: 541 }, { name: "ข้าวหมูกรอบ", category: "อาหารจานเดียว", calories: 650 }, { name: "ข้าวขาหมู", category: "อาหารจานเดียว", calories: 690 }, { name: "ข้าวคลุกกะปิ", category: "อาหารจานเดียว", calories: 540 }, { name: "ข้าวผัดหมู", category: "อาหารจานเดียว", calories: 557 }, { name: "ข้าวผัดกุ้ง", category: "อาหารจานเดียว", calories: 595 }, { name: "ข้าวผัดปู", category: "อาหารจานเดียว", calories: 610 }, { name: "ข้าวไข่เจียวหมูสับ", category: "อาหารจานเดียว", calories: 495 }, { name: "ข้าวแกงเขียวหวานไก่", category: "อาหารจานเดียว", calories: 594 }, { name: "ข้าวแกงกะหรี่หมู", category: "อาหารจานเดียว", calories: 580 }, { name: "ข้าวหน้าเป็ดย่าง", category: "อาหารจานเดียว", calories: 495 }, { name: "ข้าวหมกไก่", category: "อาหารจานเดียว", calories: 540 }, { name: "ข้าวคะน้าหมูกรอบ", category: "อาหารจานเดียว", calories: 670 }, { name: "สปาเก็ตตี้คาโบนาร่า", category: "อาหารจานเดียว", calories: 742 }, { name: "โจ๊กหมูใส่ไข่", category: "อาหารจานเดียว", calories: 253 },
+            { name: "แกงเขียวหวานไก่", category: "กับข้าว", calories: 240 }, { name: "ต้มยำกุ้งน้ำข้น", category: "กับข้าว", calories: 280 }, { name: "ต้มข่าไก่", category: "กับข้าว", calories: 210 }, { name: "พะแนงหมู", category: "กับข้าว", calories: 260 }, { name: "แกงจืดเต้าหู้หมูสับ", category: "กับข้าว", calories: 110 }, { name: "ผัดผักบุ้งไฟแดง", category: "กับข้าว", calories: 210 }, { name: "ไข่พะโล้", category: "กับข้าว", calories: 360 }, { name: "ปีกไก่ทอด", category: "กับข้าว", calories: 380 }, { name: "ปลากะพงทอดน้ำปลา", category: "กับข้าว", calories: 450 },
+            { name: "ก๋วยเตี๋ยวเรือหมูน้ำตก", category: "ก๋วยเตี๋ยว", calories: 243 }, { name: "ก๋วยเตี๋ยวต้มยำหมู", category: "ก๋วยเตี๋ยว", calories: 351 }, { name: "บะหมี่เกี๊ยวหมูแดง", category: "ก๋วยเตี๋ยว", calories: 312 }, { name: "เย็นตาโฟ", category: "ก๋วยเตี๋ยว", calories: 252 }, { name: "ผัดไทยกุ้งสด", category: "ก๋วยเตี๋ยว", calories: 550 }, { name: "ราดหน้าหมู", category: "ก๋วยเตี๋ยว", calories: 336 }, { name: "ผัดซีอิ๊วหมู", category: "ก๋วยเตี๋ยว", calories: 585 }, { name: "ก๋วยเตี๋ยวคั่วไก่", category: "ก๋วยเตี๋ยว", calories: 594 }, { name: "ข้าวซอยไก่", category: "ก๋วยเตี๋ยว", calories: 600 }, { name: "ก๋วยจั๊บน้ำข้น", category: "ก๋วยเตี๋ยว", calories: 279 },
+            { name: "ส้มตำไทย", category: "ยำ/ส้มตำ/ลาบ", calories: 120 }, { name: "ส้มตำปูปลาร้า", category: "ยำ/ส้มตำ/ลาบ", calories: 40 }, { name: "ลาบหมู", category: "ยำ/ส้มตำ/ลาบ", calories: 210 }, { name: "น้ำตกหมู", category: "ยำ/ส้มตำ/ลาบ", calories: 165 }, { name: "ยำวุ้นเส้นรวมมิตร", category: "ยำ/ส้มตำ/ลาบ", calories: 150 }, { name: "ยำมาม่า", category: "ยำ/ส้มตำ/ลาบ", calories: 350 },
+            { name: "ไก่ทอด (น่อง)", category: "ของทอด/ของว่าง", calories: 280 }, { name: "หมูปิ้ง", category: "ของทอด/ของว่าง", calories: 125 }, { name: "ลูกชิ้นปิ้ง (ไม้ละ)", category: "ของทอด/ของว่าง", calories: 130 }, { name: "ปอเปี๊ยะทอด", category: "ของทอด/ของว่าง", calories: 160 }, { name: "เฟรนช์ฟรายส์ (กลาง)", category: "ของทอด/ของว่าง", calories: 340 }, { name: "ไส้กรอกอีสาน", category: "ของทอด/ของว่าง", calories: 250 },
+            { name: "ข้าวเหนียวมะม่วง", category: "ของหวาน", calories: 350 }, { name: "บัวลอยไข่หวาน", category: "ของหวาน", calories: 220 }, { name: "ไอศกรีมกะทิ", category: "ของหวาน", calories: 207 }, { name: "น้ำแข็งใส", category: "ของหวาน", calories: 180 }, { name: "ทับทิมกรอบ", category: "ของหวาน", calories: 250 }, { name: "กล้วยบวชชี", category: "ของหวาน", calories: 230 }, { name: "สังขยาฟักทอง", category: "ของหวาน", calories: 280 }, { name: "โดนัท", category: "ของหวาน", calories: 270 },
+            { name: "ชาไทยเย็น", category: "เครื่องดื่ม", calories: 320 }, { name: "กาแฟเย็น", category: "เครื่องดื่ม", calories: 280 }, { name: "น้ำอัดลม (โค้ก)", category: "เครื่องดื่ม", calories: 140 }, { name: "น้ำส้มคั้น", category: "เครื่องดื่ม", calories: 120 }, { name: "ชามะนาว", category: "เครื่องดื่ม", calories: 150 }, { name: "นมเย็น", category: "เครื่องดื่ม", calories: 250 }
+        ];
+
+        // --- DOM Elements ---
+        const loginScreen = document.getElementById('loginScreen');
+        const appScreen = document.getElementById('appScreen');
+        const anonLoginBtn = document.getElementById('anonLoginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userStatus = document.getElementById('userStatus');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const showRegisterLink = document.getElementById('showRegisterLink');
+        const showLoginLink = document.getElementById('showLoginLink');
+        const authError = document.getElementById('authError');
+        
+        const foodListEl = document.getElementById('foodList');
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const mealListEl = document.getElementById('mealList');
+        const totalCaloriesEl = document.getElementById('totalCalories');
+        const emptyMealText = document.getElementById('emptyMealText');
+        const clearButton = document.getElementById('clearButton');
+        const calorieChartCanvas = document.getElementById('calorieChart');
+        const addFoodModal = document.getElementById('addFoodModal');
+        const openAddFoodModalBtn = document.getElementById('openAddFoodModal');
+        const closeAddFoodModalBtn = document.getElementById('closeAddFoodModal');
+        const addFoodForm = document.getElementById('addFoodForm');
+        const foodCategorySelect = document.getElementById('foodCategory');
+
+        // --- App State ---
+        let meal = [];
+        let calorieChart;
+        let foodData = [...defaultFoodData];
+        let currentUserId = null;
+        let unsubscribeUserFoods = null;
+
+        // --- AUTHENTICATION ---
+        onAuthStateChanged(auth, user => {
+            authError.textContent = '';
+            if (user) {
+                currentUserId = user.uid;
+                if (user.isAnonymous) {
+                    userStatus.textContent = `ผู้ใช้ทั่วไป (UID: ${user.uid.substring(0, 6)}...)`;
+                } else {
+                    userStatus.textContent = user.email;
+                }
+                loginScreen.classList.add('hidden');
+                appScreen.classList.remove('hidden');
+                appScreen.classList.add('opacity-100');
+                initAppForUser();
+            } else {
+                currentUserId = null;
+                if(unsubscribeUserFoods) unsubscribeUserFoods();
+                appScreen.classList.add('hidden');
+                appScreen.classList.remove('opacity-100');
+                loginScreen.classList.remove('hidden');
+                clearApp();
+            }
+        });
+
+        // Toggle between login and register forms
+        showRegisterLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+            authError.textContent = '';
+        });
+
+        showLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            registerForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+            authError.textContent = '';
+        });
+        
+        // Handle Login
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            signInWithEmailAndPassword(auth, email, password)
+                .catch(error => {
+                    authError.textContent = getAuthErrorMessage(error.code);
+                });
+        });
+
+        // Handle Register
+        registerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            createUserWithEmailAndPassword(auth, email, password)
+                .catch(error => {
+                    authError.textContent = getAuthErrorMessage(error.code);
+                });
+        });
+
+        anonLoginBtn.addEventListener('click', () => {
+            signInAnonymously(auth).catch(error => {
+                authError.textContent = "การเข้าสู่ระบบแบบไม่ระบุตัวตนล้มเหลว";
+            });
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            signOut(auth);
+        });
+        
+        function getAuthErrorMessage(errorCode) {
+            switch (errorCode) {
+                case 'auth/wrong-password':
+                    return 'รหัสผ่านไม่ถูกต้อง';
+                case 'auth/user-not-found':
+                    return 'ไม่พบผู้ใช้อีเมลนี้';
+                case 'auth/invalid-email':
+                    return 'รูปแบบอีเมลไม่ถูกต้อง';
+                case 'auth/email-already-in-use':
+                    return 'อีเมลนี้มีผู้ใช้งานแล้ว';
+                case 'auth/weak-password':
+                    return 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
+                default:
+                    return 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+            }
+        }
+
+        // --- APP INITIALIZATION & LOGIC ---
+        function initAppForUser() {
+            if (!currentUserId) return;
+            
+            const userFoodsCollection = collection(db, 'userFoods', currentUserId, 'foods');
+            
+            unsubscribeUserFoods = onSnapshot(userFoodsCollection, (snapshot) => {
+                const userFoodData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                foodData = [...defaultFoodData, ...userFoodData];
+                populateCategories();
+                renderFoodList(searchInput.value, categoryFilter.value);
+            });
+
+            initializeChart();
+            renderMealList();
+
+            if (!window.appListenersAttached) {
+                searchInput.addEventListener('input', () => renderFoodList(searchInput.value, categoryFilter.value));
+                categoryFilter.addEventListener('change', () => renderFoodList(searchInput.value, categoryFilter.value));
+                clearButton.addEventListener('click', clearMeal);
+                openAddFoodModalBtn.addEventListener('click', () => addFoodModal.classList.remove('hidden'));
+                closeAddFoodModalBtn.addEventListener('click', () => addFoodModal.classList.add('hidden'));
+                addFoodForm.addEventListener('submit', handleSaveFood);
+                window.appListenersAttached = true;
+            }
+        }
+        
+        function clearApp() {
+            meal = [];
+            foodData = [...defaultFoodData];
+            if (calorieChart) calorieChart.destroy();
+            renderMealList();
+            populateCategories();
+            renderFoodList();
+        }
+
+        function populateCategories() {
+            const categories = [...new Set(foodData.map(food => food.category))].sort((a,b) => a.localeCompare(b, 'th'));
+            categoryFilter.innerHTML = '<option value="all">ทุกหมวดหมู่</option>';
+            foodCategorySelect.innerHTML = '';
+            categories.forEach(category => {
+                categoryFilter.innerHTML += `<option value="${category}">${category}</option>`;
+                foodCategorySelect.innerHTML += `<option value="${category}">${category}</option>`;
+            });
+        }
+
+        function renderFoodList(filter = '', category = 'all') {
+            foodListEl.innerHTML = '';
+            const filteredFoods = foodData.filter(food => 
+                food.name.toLowerCase().includes(filter.toLowerCase()) && (category === 'all' || food.category === category)
+            ).sort((a,b) => a.name.localeCompare(b.name, 'th'));
+
+            if (filteredFoods.length === 0) {
+                foodListEl.innerHTML = `<p class="text-center text-gray-500 py-4">ไม่พบรายการอาหาร</p>`;
+                return;
+            }
+
+            filteredFoods.forEach(food => {
+                const foodItem = document.createElement('div');
+                foodItem.className = 'flex justify-between items-center p-3 mb-2 bg-gray-50 rounded-lg hover:bg-[#f4f0e9] transition-colors duration-200';
+                
+                let deleteBtnHtml = food.id ? `<button data-id="${food.id}" class="delete-food-btn text-red-400 hover:text-red-600 mr-2 text-xs">ลบ</button>` : '';
+
+                foodItem.innerHTML = `
+                    <div class="flex-grow">
+                        <p class="font-medium">${food.name}</p>
+                        <p class="text-sm text-gray-500">${food.calories} kcal</p>
+                    </div>
+                    <div class="flex items-center">
+                        ${deleteBtnHtml}
+                        <button class="add-btn bg-[#8c6f4e] text-white w-8 h-8 flex items-center justify-center rounded-full text-lg hover:bg-[#7a5f41] transition-colors duration-300">+</button>
+                    </div>
+                `;
+                foodItem.querySelector('.add-btn').addEventListener('click', () => addFoodToMeal(food));
+                if (food.id) {
+                    foodItem.querySelector('.delete-food-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteUserFood(e.target.dataset.id);
+                    });
+                }
+                foodListEl.appendChild(foodItem);
+            });
+        }
+
+        function addFoodToMeal(food) {
+            meal.push({ ...food, mealId: Date.now() });
+            renderMealList();
+        }
+        
+        function removeFoodFromMeal(mealId) {
+            meal = meal.filter(item => item.mealId !== mealId);
+            renderMealList();
+        }
+
+        function renderMealList() {
+            mealListEl.innerHTML = '';
+            if (meal.length === 0) {
+                mealListEl.appendChild(emptyMealText);
+                emptyMealText.style.display = 'block';
+                clearButton.disabled = true;
+            } else {
+                emptyMealText.style.display = 'none';
+                clearButton.disabled = false;
+                meal.forEach(item => {
+                    const mealItemEl = document.createElement('div');
+                    mealItemEl.className = 'flex justify-between items-center p-3 mb-2 bg-green-50 rounded-lg';
+                    mealItemEl.innerHTML = `
+                        <div>
+                            <p class="font-medium">${item.name}</p>
+                            <p class="text-sm text-gray-500">${item.calories} kcal</p>
+                        </div>
+                        <button class="remove-btn text-red-500 hover:text-red-700 font-bold text-lg">×</button>
+                    `;
+                    mealItemEl.querySelector('.remove-btn').addEventListener('click', () => removeFoodFromMeal(item.mealId));
+                    mealListEl.appendChild(mealItemEl);
+                });
+            }
+            updateTotalCalories();
+            updateChart();
+        }
+        
+        function updateTotalCalories() {
+            const total = meal.reduce((sum, item) => sum + item.calories, 0);
+            totalCaloriesEl.textContent = total.toLocaleString();
+        }
+
+        function clearMeal() {
+            meal = [];
+            renderMealList();
+        }
+
+        function initializeChart() {
+            if (calorieChart) calorieChart.destroy();
+            const ctx = calorieChartCanvas.getContext('2d');
+            calorieChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: [], datasets: [{ data: [], backgroundColor: ['#d4c4a8', '#e2d5be', '#c8b69a', '#b9a485', '#a89270', '#97805b', '#866e46', '#755c31'], borderColor: '#fdfbf7', borderWidth: 3 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: "'Kanit', sans-serif" } } }, tooltip: { callbacks: { label: (c) => `${c.label}: ${c.parsed} kcal` } } } }
+            });
+        }
+
+        function updateChart() {
+            if (!calorieChart) return;
+            if (meal.length === 0) {
+                calorieChart.data.labels = [];
+                calorieChart.data.datasets[0].data = [];
+            } else {
+                const aggregated = meal.reduce((acc, i) => { acc[i.name] = (acc[i.name] || 0) + i.calories; return acc; }, {});
+                calorieChart.data.labels = Object.keys(aggregated);
+                calorieChart.data.datasets[0].data = Object.values(aggregated);
+            }
+            calorieChart.update();
+        }
+
+        async function handleSaveFood(event) {
+            event.preventDefault();
+            if (!currentUserId) return;
+            const name = document.getElementById('foodName').value.trim();
+            const calories = parseInt(document.getElementById('foodCalories').value);
+            const category = document.getElementById('foodCategory').value;
+
+            if (name && calories >= 0 && category) {
+                try {
+                    await addDoc(collection(db, 'userFoods', currentUserId, 'foods'), { name, calories, category });
+                    addFoodModal.classList.add('hidden');
+                    addFoodForm.reset();
+                } catch (error) {
+                    console.error("Error adding document: ", error);
+                    alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+                }
+            }
+        }
+
+        async function deleteUserFood(docId) {
+            if (!currentUserId || !docId) return;
+            if (confirm('คุณต้องการลบรายการอาหารนี้ใช่หรือไม่?')) {
+                try {
+                    await deleteDoc(doc(db, 'userFoods', currentUserId, 'foods', docId));
+                } catch (error) {
+                    console.error("Error deleting document: ", error);
+                    alert("เกิดข้อผิดพลาดในการลบข้อมูล");
+                }
+            }
+        }
+    </script>
+</body>
+</html>
