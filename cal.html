@@ -200,15 +200,78 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        const defaultFoodData = [
-            { name: "ข้าวกะเพราไก่ไข่ดาว", category: "อาหารจานเดียว", calories: 630 }, { name: "ข้าวมันไก่", category: "อาหารจานเดียว", calories: 596 }, { name: "ข้าวมันไก่ทอด", category: "อาหารจานเดียว", calories: 695 }, { name: "ข้าวหมูแดง", category: "อาหารจานเดียว", calories: 541 }, { name: "ข้าวหมูกรอบ", category: "อาหารจานเดียว", calories: 650 }, { name: "ข้าวขาหมู", category: "อาหารจานเดียว", calories: 690 }, { name: "ข้าวคลุกกะปิ", category: "อาหารจานเดียว", calories: 540 }, { name: "ข้าวผัดหมู", category: "อาหารจานเดียว", calories: 557 }, { name: "ข้าวผัดกุ้ง", category: "อาหารจานเดียว", calories: 595 }, { name: "ข้าวผัดปู", category: "อาหารจานเดียว", calories: 610 }, { name: "ข้าวไข่เจียวหมูสับ", category: "อาหารจานเดียว", calories: 495 }, { name: "ข้าวแกงเขียวหวานไก่", category: "อาหารจานเดียว", calories: 594 }, { name: "ข้าวแกงกะหรี่หมู", category: "อาหารจานเดียว", calories: 580 }, { name: "ข้าวหน้าเป็ดย่าง", category: "อาหารจานเดียว", calories: 495 }, { name: "ข้าวหมกไก่", category: "อาหารจานเดียว", calories: 540 }, { name: "ข้าวคะน้าหมูกรอบ", category: "อาหารจานเดียว", calories: 670 }, { name: "สปาเก็ตตี้คาโบนาร่า", category: "อาหารจานเดียว", calories: 742 }, { name: "โจ๊กหมูใส่ไข่", category: "อาหารจานเดียว", calories: 253 },
-            { name: "แกงเขียวหวานไก่", category: "กับข้าว", calories: 240 }, { name: "ต้มยำกุ้งน้ำข้น", category: "กับข้าว", calories: 280 }, { name: "ต้มข่าไก่", category: "กับข้าว", calories: 210 }, { name: "พะแนงหมู", category: "กับข้าว", calories: 260 }, { name: "แกงจืดเต้าหู้หมูสับ", category: "กับข้าว", calories: 110 }, { name: "ผัดผักบุ้งไฟแดง", category: "กับข้าว", calories: 210 }, { name: "ไข่พะโล้", category: "กับข้าว", calories: 360 }, { name: "ปีกไก่ทอด", category: "กับข้าว", calories: 380 }, { name: "ปลากะพงทอดน้ำปลา", category: "กับข้าว", calories: 450 },
-            { name: "ก๋วยเตี๋ยวเรือหมูน้ำตก", category: "ก๋วยเตี๋ยว", calories: 243 }, { name: "ก๋วยเตี๋ยวต้มยำหมู", category: "ก๋วยเตี๋ยว", calories: 351 }, { name: "บะหมี่เกี๊ยวหมูแดง", category: "ก๋วยเตี๋ยว", calories: 312 }, { name: "เย็นตาโฟ", category: "ก๋วยเตี๋ยว", calories: 252 }, { name: "ผัดไทยกุ้งสด", category: "ก๋วยเตี๋ยว", calories: 550 }, { name: "ราดหน้าหมู", category: "ก๋วยเตี๋ยว", calories: 336 }, { name: "ผัดซีอิ๊วหมู", category: "ก๋วยเตี๋ยว", calories: 585 }, { name: "ก๋วยเตี๋ยวคั่วไก่", category: "ก๋วยเตี๋ยว", calories: 594 }, { name: "ข้าวซอยไก่", category: "ก๋วยเตี๋ยว", calories: 600 }, { name: "ก๋วยจั๊บน้ำข้น", category: "ก๋วยเตี๋ยว", calories: 279 },
-            { name: "ส้มตำไทย", category: "ยำ/ส้มตำ/ลาบ", calories: 120 }, { name: "ส้มตำปูปลาร้า", category: "ยำ/ส้มตำ/ลาบ", calories: 40 }, { name: "ลาบหมู", category: "ยำ/ส้มตำ/ลาบ", calories: 210 }, { name: "น้ำตกหมู", category: "ยำ/ส้มตำ/ลาบ", calories: 165 }, { name: "ยำวุ้นเส้นรวมมิตร", category: "ยำ/ส้มตำ/ลาบ", calories: 150 }, { name: "ยำมาม่า", category: "ยำ/ส้มตำ/ลาบ", calories: 350 },
-            { name: "ไก่ทอด (น่อง)", category: "ของทอด/ของว่าง", calories: 280 }, { name: "หมูปิ้ง", category: "ของทอด/ของว่าง", calories: 125 }, { name: "ลูกชิ้นปิ้ง (ไม้ละ)", category: "ของทอด/ของว่าง", calories: 130 }, { name: "ปอเปี๊ยะทอด", category: "ของทอด/ของว่าง", calories: 160 }, { name: "เฟรนช์ฟรายส์ (กลาง)", category: "ของทอด/ของว่าง", calories: 340 }, { name: "ไส้กรอกอีสาน", category: "ของทอด/ของว่าง", calories: 250 },
-            { name: "ข้าวเหนียวมะม่วง", category: "ของหวาน", calories: 350 }, { name: "บัวลอยไข่หวาน", category: "ของหวาน", calories: 220 }, { name: "ไอศกรีมกะทิ", category: "ของหวาน", calories: 207 }, { name: "น้ำแข็งใส", category: "ของหวาน", calories: 180 }, { name: "ทับทิมกรอบ", category: "ของหวาน", calories: 250 }, { name: "กล้วยบวชชี", category: "ของหวาน", calories: 230 }, { name: "สังขยาฟักทอง", category: "ของหวาน", calories: 280 }, { name: "โดนัท", category: "ของหวาน", calories: 270 },
-            { name: "ชาไทยเย็น", category: "เครื่องดื่ม", calories: 320 }, { name: "กาแฟเย็น", category: "เครื่องดื่ม", calories: 280 }, { name: "น้ำอัดลม (โค้ก)", category: "เครื่องดื่ม", calories: 140 }, { name: "น้ำส้มคั้น", category: "เครื่องดื่ม", calories: 120 }, { name: "ชามะนาว", category: "เครื่องดื่ม", calories: 150 }, { name: "นมเย็น", category: "เครื่องดื่ม", calories: 250 }
-        ];
+        const defaultFoodData  = [
+    // ของทอด / ของว่าง
+    { name: "นักเก็ตไก่ (6-7 ชิ้น)", category: "ของทอด/ของว่าง", calories: 280 },
+    { name: "ปีกไก่ทอด (3 ชิ้น)", category: "ของทอด/ของว่าง", calories: 350 },
+    { name: "น่องไก่ทอด (1 น่องใหญ่)", category: "ของทอด/ของว่าง", calories: 290 },
+    { name: "ไก่ป๊อป (1 ถ้วย)", category: "ของทอด/ของว่าง", calories: 360 },
+    { name: "ชีสบอล (5-6 ลูก)", category: "ของทอด/ของว่าง", calories: 320 },
+    { name: "ไส้กรอกแดงทอด (1 ไม้)", category: "ของทอด/ของว่าง", calories: 180 },
+    { name: "เกี๊ยวทอด (5-6 ชิ้น)", category: "ของทอด/ของว่าง", calories: 220 },
+    { name: "ลูกชิ้นปลาทอด (1 ไม้)", category: "ของทอด/ของว่าง", calories: 150 },
+    { name: "ปลาทอดหนังไก่กรอบ", category: "ของทอด/ของว่าง", calories: 450 },
+    { name: "ไก่กรอบเกาหลี (ซอสเผ็ด)", category: "ของทอด/ของว่าง", calories: 480 },
+    { name: "เบอร์เกอร์หมูทอด", category: "ของทอด/ของว่าง", calories: 450 },
+    { name: "เบอร์เกอร์ปลา", category: "ของทอด/ของว่าง", calories: 380 },
+    { name: "ขนมกรุบกรอบ (1 ซองเล็ก)", category: "ของทอด/ของว่าง", calories: 150 },
+    { name: "ไส้กรอกเสียบไม้ (1 ไม้)", category: "ของทอด/ของว่าง", calories: 160 },
+    { name: "หมูปิ้ง (1 ไม้)", category: "ของทอด/ของว่าง", calories: 125 },
+    { name: "บาร์บีคิว (1 ไม้)", category: "ของทอด/ของว่าง", calories: 180 },
+    { name: "หม่าล่า (1 ไม้)", category: "ของทอด/ของว่าง", calories: 120 },
+    { name: "ข้าวโพดอบเนย (1 ถ้วย)", category: "ของทอด/ของว่าง", calories: 250 },
+    { name: "โตเกียวเนยกรอบ (1 ชิ้น)", category: "ของหวาน", calories: 180 },
+
+    // อาหารจานเดียว
+    { name: "ข้าวเหนียว", category: "อาหารจานเดียว", calories: 150 },
+    { name: "ข้าวเหนียวและน่องไก่ทอด", category: "อาหารจานเดียว", calories: 440 },
+    { name: "ข้าวราดแกง (2 อย่าง)", category: "อาหารจานเดียว", calories: 550 },
+    { name: "ข้าวเหนียวหมูปิ้ง (3 ไม้)", category: "อาหารจานเดียว", calories: 525 },
+    { name: "ข้าวคลุกกะปิ", category: "อาหารจานเดียว", calories: 540 },
+    { name: "ข้าวผัดพริกเผาหมู", category: "อาหารจานเดียว", calories: 620 },
+    { name: "ข้าวเหนียวลาบหมู", category: "อาหารจานเดียว", calories: 360 },
+    { name: "ผัดพริกอ่อนตับราดข้าว", category: "อาหารจานเดียว", calories: 580 },
+    { name: "หมูเกาหลีราดข้าว", category: "อาหารจานเดียว", calories: 610 },
+    { name: "ไก่ซอสกระเทียมพริกไทยราดข้าว", category: "อาหารจานเดียว", calories: 590 },
+    { name: "สเต็กไก่พริกไทยดำ", category: "อาหารจานเดียว", calories: 450 },
+    { name: "ไก่เทอริยากิราดข้าว", category: "อาหารจานเดียว", calories: 550 },
+    { name: "คั่วกลิ้งหมูราดข้าว", category: "อาหารจานเดียว", calories: 580 },
+    { name: "สปาเก็ตตี้คาโบนาร่า", category: "อาหารจานเดียว", calories: 742 },
+    { name: "สปาเก็ตตี้ผัดขี้เมาทะเล", category: "อาหารจานเดียว", calories: 650 },
+    { name: "ราเม็งทงคตสึ", category: "อาหารจานเดียว", calories: 600 },
+
+    // ก๋วยเตี๋ยว
+    { name: "ก๋วยเตี๋ยวหมูน้ำใส", category: "ก๋วยเตี๋ยว", calories: 320 },
+    { name: "ก๋วยเตี๋ยวเรือหมูน้ำตก (น้ำข้น)", category: "ก๋วยเตี๋ยว", calories: 243 },
+    { name: "ก๋วยเตี๋ยวไก่ตุ๋น", category: "ก๋วยเตี๋ยว", calories: 450 },
+    { name: "บะหมี่เกี๊ยวหมูแดง", category: "ก๋วยเตี๋ยว", calories: 312 },
+    { name: "ก๋วยเตี๋ยวไก่ฉีก", category: "ก๋วยเตี๋ยว", calories: 350 },
+    { name: "บะหมี่หมูอบเทอริยากิ", category: "ก๋วยเตี๋ยว", calories: 480 },
+    { name: "บะหมี่หมูเด้ง", category: "ก๋วยเตี๋ยว", calories: 390 },
+    { name: "บะหมี่ต้มยำหมูเด้ง", category: "ก๋วยเตี๋ยว", calories: 420 },
+
+    // ยำ / สลัด
+    { name: "ยำรวมมิตร", category: "ยำ/ส้มตำ/ลาบ", calories: 180 },
+    { name: "ยำวุ้นเส้น", category: "ยำ/ส้มตำ/ลาบ", calories: 150 },
+    { name: "ยำไก่ยอ", category: "ยำ/ส้มตำ/ลาบ", calories: 160 },
+    { name: "สลัดผัก (ไม่รวมน้ำสลัด)", category: "ยำ/ส้มตำ/ลาบ", calories: 120 },
+
+    // กับข้าว / ซุป
+    { name: "กะเพาะปลา", category: "กับข้าว", calories: 250 },
+    { name: "ไข่ตุ๋น", category: "กับข้าว", calories: 150 },
+    { name: "ต้มจืดวุ้นเส้นหมูสับ", category: "กับข้าว", calories: 180 },
+
+    // ผลไม้
+    { name: "แอปเปิ้ล (1 ผลกลาง)", category: "ผลไม้", calories: 95 },
+    { name: "แตงโม (1 ชิ้น)", category: "ผลไม้", calories: 85 },
+    { name: "สาลี่ (1 ผลกลาง)", category: "ผลไม้", calories: 100 },
+    { name: "มะม่วงสุก (ครึ่งผล)", category: "ผลไม้", calories: 120 }
+];
+
+/*
+ * หมายเหตุ: ค่าแคลอรี่ที่ระบุเป็นค่าประมาณการเท่านั้น
+ * ซึ่งอาจแตกต่างกันไปขึ้นอยู่กับส่วนผสม ปริมาณ และวิธีการปรุงอาหารของแต่ละร้าน
+ */
 
         // --- DOM Elements ---
         const loginScreen = document.getElementById('loginScreen');
